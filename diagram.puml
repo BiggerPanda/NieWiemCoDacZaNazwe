@@ -1,3 +1,5 @@
 @startuml
-User -> Server : request
+User -> Server : register
+Server -> Mongo : Create User
+Server -> Redis : Create Code 
 @enduml
