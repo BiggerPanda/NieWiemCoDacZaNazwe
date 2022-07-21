@@ -1,0 +1,10 @@
+@startuml
+
+LogIn -> Confirm : have Account
+LogIn -> Register : don't have Account
+Confirm -> Loggged
+Register -> Server : create Account
+Confirm -> Server : ask for Code
+Server -> Confirm: return clientCode
+
+@enduml
