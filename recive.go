@@ -1,54 +1,53 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/hello" {
-		http.Error(w, "404 not found.", http.StatusNotFound)
-		return
-	}
-
-	if r.Method != "GET" {
-		http.Error(w, "Method is not supported.", http.StatusNotFound)
-		return
-	}
-
-	fmt.Fprintf(w, "Hello!")
-}
-
-func redisView(w http.ResponseWriter, r *http.Request) {
-	redisPool := newPool().Get()
-	var value, err2 = redisPool.Do("GET", "TestKey")
-	fmt.Fprintf(w, "%s \n", value)
-
-	if err2 != nil {
-		fmt.Fprintf(w, "%s \n", err2)
+func HandleErr(err error) {
+	if err != nil {
+		panic(err.Error())
 	}
 }
 
-func CreateClient(w http.ResponseWriter, r *http.Request) {
-
-	redisPool := newPool().Get()
-	if err := r.ParseForm(); err != nil {
-		fmt.Fprintf(w, "ParseForm() err: %v", err)
+func HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var user User
+	err := decoder.Decode(&user)
+	if err != nil {
+		// bad JSON or unrecognized json field
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Fprintf(w, "POST request successful")
-	name := r.FormValue("name")
-	address := r.FormValue("address")
 
-	fmt.Fprintf(w, "Name = %s\n", name)
-	fmt.Fprintf(w, "Address = %s\n", address)
-
-	redisPool.Do("SET", name, "TestKey123")
-	var value, err2 = redisPool.Do("GET", name)
-	fmt.Fprintf(w, "%s \n", value)
-
-	if err2 != nil {
-		fmt.Fprintf(w, "%s \n", err2)
+	if user.Code == "" {
+		http.Error(w, "missing field 'test' from JSON object", http.StatusBadRequest)
+		return
 	}
 
+	// optional extra check
+	if decoder.More() {
+		http.Error(w, "extraneous data after JSON object", http.StatusBadRequest)
+		return
+	}
+	log.Println(user.Username)
+	CreateUser(&user)
+
+}
+
+func HashAndSalt(pass []byte) string {
+	hashed, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost)
+	HandleErr(err)
+
+	return string(hashed)
+}
+
+func CreateUser(user *User) error {
+	_, err := mongodb.Collection("Users").InsertOne(ctx, user)
+	rdb.Set(ctx, user.ID.String(), user.Code, 0)
+	return err
 }
