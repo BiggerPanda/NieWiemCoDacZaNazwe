@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:5.0.9
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
+  redis:
+    image: redis/redis-stack:7.0.0-RC6
+    restart: always
+    ports:
+      - "6379:6379"
+      - "8081:8001"
+
+volumes:
+  mongo:
